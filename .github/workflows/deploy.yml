@@ -1,0 +1,39 @@
+name: Deploy Vue Project
+
+on:
+  push:
+    branches:
+      - main  # 只有推送到 main 分支时才触发
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 拉取代码
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 2. 安装 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. 安装依赖并打包
+      - name: Install and Build
+        run: |
+          npm install
+          npm run build
+
+      # 4. 通过 SSH 部署到阿里云
+      - name: Deploy to Server
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          ARGS: "-avzr --delete"
+          SOURCE: "dist/"  # Vue 打包后的目录
+          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
+          REMOTE_USER: ${{ secrets.SERVER_USER }}
+          TARGET: "/var/www/vue-test"  # 服务器上的目标路径
